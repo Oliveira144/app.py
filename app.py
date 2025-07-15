@@ -46,7 +46,15 @@ st.subheader("📊 Histórico (últimos 27)")
 historico_lista = list(st.session_state.historico)
 for i in range(0, len(historico_lista), 9):
     linha = historico_lista[i:i+9]
-    st.markdown("".join([cores[c] for c in linha]))
+    # CORREÇÃO: Adicionando uma verificação de segurança
+    linha_formatada = []
+    for c in linha:
+        if c in cores:
+            linha_formatada.append(cores[c])
+        else:
+            # Caso um valor inválido apareça, ele será substituído por um '?'
+            linha_formatada.append("❓")
+    st.markdown("".join(linha_formatada))
 
 # ========== DETECÇÃO DE PADRÕES ==========
 def detectar_padrao(h):
