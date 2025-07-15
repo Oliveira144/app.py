@@ -1,7 +1,5 @@
-import streamlit as st
-import pandas as pd
-from data_manager import DataManager
-from pattern_analyzer import PatternAnalyzer
+from gerenciador_de_dados import GerenciadorDeDados
+from analisador_de_padroes import AnalisadorDePadroes
 
 # Acesso ao estado da sessão para manter os dados
 if 'data_manager' not in st.session_state:
