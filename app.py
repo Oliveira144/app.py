@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 import pandas as pd
 from data_manager import DataManager
@@ -53,8 +52,8 @@ st.header("Histórico de Jogadas")
 history = list(st.session_state.data_manager.history)
 if history:
     # Transforma a lista em um DataFrame para exibir em uma tabela
-    df_history = pd.DataFrame({'Histórico': history}).transpose()
-    st.table(df_history)
+    df_history = pd.DataFrame(history, columns=["Resultado"])
+    st.table(df_history.tail(27).style.hide(axis='index'))
 else:
     st.info("O histórico está vazio. Adicione um resultado acima para começar a análise.")
 
@@ -88,17 +87,18 @@ st.header("Conferidor de Performance")
 # Lógica para registrar o último resultado e comparar com a sugestão
 if history:
     last_result = history[-1]
-    last_bet_log = None
-    if st.session_state.data_manager.bets_log and last_result == st.session_state.data_manager.bets_log[-1]['actual']:
-        last_bet_log = st.session_state.data_manager.bets_log[-1]
-
-    if suggestion and last_bet_log and last_bet_log['bet'] != suggestion:
-        is_correct = st.session_state.data_manager.log_bet(suggestion, last_result)
-        if is_correct:
-            st.success(f"✅ ACERTOU! A sugestão de {suggestion} estava correta.")
-        else:
-            st.error(f"❌ ERROU. A sugestão era {suggestion}, mas o resultado foi {last_result}.")
     
+    # Verifica se a sugestão da rodada anterior (se houver) foi correta
+    if 'last_suggestion' in st.session_state and st.session_state.last_suggestion:
+        is_correct = st.session_state.data_manager.log_bet(st.session_state.last_suggestion, last_result)
+        if is_correct:
+            st.success(f"✅ ACERTOU! A sugestão de {st.session_state.last_suggestion} estava correta.")
+        else:
+            st.error(f"❌ ERROU. A sugestão era {st.session_state.last_suggestion}, mas o resultado foi {last_result}.")
+
+    # Armazena a sugestão atual para a próxima rodada
+    st.session_state.last_suggestion = suggestion
+
     correct, total, accuracy = st.session_state.data_manager.get_performance()
     st.metric(label="Taxa de Acertos", value=f"{accuracy:.2f}%", help=f"{correct} acertos de um total de {total} apostas.")
 
