@@ -130,7 +130,7 @@ padroes_definitions = [
     {"name": "Frequência Oculta", "priority": 7, "min_len": 18, 
      "detect_func": lambda h: "R" if Counter(h[-18:])["R"] < Counter(h[-18:])["B"] else "B" if Counter(h[-18:])["B"] < Counter(h[-18:])["R"] else None},
     {"name": "Zona Morta", "priority": 6, "min_len": 12, 
-     "detect_func": lambda h: cor if cor not in h[-12:] else None for cor in ["R", "B"]}, # Esta lógica precisa ser ajustada para retornar apenas uma cor
+     "detect_func": lambda h: "R" if "R" not in h[-12:] else ("B" if "B" not in h[-12:] else None)}, # Lógica corrigida
 
     # Padrões de Manipulação
     {"name": "Inversão com Delay", "priority": 9, "min_len": 6, 
@@ -158,14 +158,14 @@ def detectar_padrao_otimizado(h):
         if len(h) >= pattern_def["min_len"]:
             # Lógica especial para "Zona Morta" que itera sobre cores
             if pattern_def["name"] == "Zona Morta":
-                for cor in ["R", "B"]:
-                    if cor not in h[-12:]:
-                        detected_patterns.append({
-                            "name": pattern_def["name"],
-                            "sugestao": cor,
-                            "priority": pattern_def["priority"]
-                        })
-                        break # Encontrou uma zona morta, não precisa checar a outra cor para este padrão
+                # A detect_func já foi corrigida para ser uma lambda válida
+                sugestao = pattern_def["detect_func"](h)
+                if sugestao:
+                    detected_patterns.append({
+                        "name": pattern_def["name"],
+                        "sugestao": sugestao,
+                        "priority": pattern_def["priority"]
+                    })
             else:
                 sugestao = pattern_def["detect_func"](h)
                 if sugestao:
