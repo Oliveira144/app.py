@@ -1,5 +1,5 @@
 import streamlit as st
-from collections import deque, Counter, defaultdict
+from collections import deque, defaultdict, Counter
 
 # ========== CONFIGURAÇÃO ==========
 st.set_page_config(page_title="FS Pattern Master v1 – AI Estratégica 30x", layout="centered")
@@ -7,12 +7,12 @@ st.title("🎯 FS Pattern Master v1 – AI Estratégica 30x")
 
 # ========== MAPA DE CORES ==========
 cores = {
-    "R": "🔴",  # Red / Casa
-    "B": "🔵",  # Blue / Visitante
-    "E": "🟡"   # Empate
+    "R": "🔴",
+    "B": "🔵",
+    "E": "🟡"
 }
 
-# ========== ESTADO DA SESSÃO ==========
+# ========== ESTADO ==========
 if "historico" not in st.session_state:
     st.session_state.historico = deque(maxlen=27)
 
@@ -28,7 +28,7 @@ if "ultima_sugestao" not in st.session_state:
 if "estatisticas" not in st.session_state:
     st.session_state.estatisticas = defaultdict(lambda: {"acertos": 0, "erros": 0})
 
-# ========== INSERÇÃO DO HISTÓRICO ==========
+# ========== INSERÇÃO ==========
 st.subheader("📥 Inserir resultado")
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -41,10 +41,11 @@ with col3:
     if st.button("🔵 Blue"):
         st.session_state.historico.append("B")
 
-# ========== EXIBIÇÃO DO HISTÓRICO ==========
+# ========== EXIBIÇÃO HISTÓRICO ==========
 st.subheader("📊 Histórico (últimos 27)")
-for i in range(0, len(st.session_state.historico), 9):
-    linha = st.session_state.historico[i:i+9]
+historico_lista = list(st.session_state.historico)
+for i in range(0, len(historico_lista), 9):
+    linha = historico_lista[i:i+9]
     st.markdown("".join([cores[c] for c in linha]))
 
 # ========== DETECÇÃO DE PADRÕES ==========
@@ -52,24 +53,24 @@ def detectar_padrao(h):
     if len(h) < 6:
         return None, None
 
-    # Padrões Base (1–14)
+    # ---------------------- Padrões 1 a 14 ----------------------
     if len(set(h[-4:])) == 1:
         return "Sequência Crescente", h[-1]
-    if h[-4:-1] == [h[-1]]*3 and h[-4] != h[-1]:
+    if h[-4:-1] == [h[-1]] * 3 and h[-4] != h[-1]:
         return "Sequência com Quebra", h[-4]
-    if h[-4:] == ["R", "B", "R", "B"] or h[-4:] == ["B", "R", "B", "R"]:
+    if h[-4:] in (["R", "B", "R", "B"], ["B", "R", "B", "R"]):
         return "Alternância Padrão", "R" if h[-1] == "B" else "B"
-    if h[-5:-2] == ["R", "B", "R"] and h[-2:] == ["R", "R"]:
+    if h[-6:-3] == ["R", "B", "R"] and h[-3:] == ["R", "R", "R"]:
         return "Alternância + Repetição", "R"
-    if len(h) >= 9 and all(x == h[-9] for x in h[-9:-6]) and all(x == h[-6] for x in h[-6:-3]) and all(x == h[-3] for x in h[-3:]):
+    if len(h) >= 9 and h[-9:-6] == h[-6:-3] == h[-3:]:
         return "Bloco 3x3", h[-1]
     if h[-6:] == h[-6:-3][::-1] + h[-3:]:
         return "Espelhamento Horizontal", h[-1]
-    if h[-6:] == ["R","R","B","B","R","R"] or h[-6:] == ["B","B","R","R","B","B"]:
+    if h[-6:-4] == ["R", "R"] and h[-4:-2] == ["B", "B"]:
         return "2x Alternado", h[-1]
     if h[-7] == h[-6] and h[-5] == h[-4] and h[-3] == "E" and h[-2] == h[-1]:
         return "2x Alternado com Empate", h[-1]
-    if len(h) >= 10 and h[-5:] == h[-10:-5]:
+    if len(h) >= 10 and h[-10:-5] == h[-5:]:
         return "Reescrita de Baralho", h[-1]
     if len(set(h[-4:])) == 4:
         return "Anti-Padrão", h[-1]
@@ -80,63 +81,63 @@ def detectar_padrao(h):
     if len(h) >= 18 and h[-9:] == h[-18:-9]:
         return "Repetição Vertical", h[-1]
     if len(h) >= 18 and h[-9:] == h[-18:-9][::-1]:
-        return "Inversão Vertical Estrutural", h[-1]
+        return "Inversão Vertical", h[-1]
 
-    # Padrões Psicológicos (15–17)
-    if h[-4:] == ["R", "R", "R", "B"] or h[-4:] == ["B", "B", "B", "R"]:
+    # ---------------------- Padrões Psicológicos ----------------------
+    if h[-4:] in (["R", "R", "R", "B"], ["B", "B", "B", "R"]):
         return "Indução de Ganância", h[-1]
-    if h[-6:] in [["R","B","B","R","R","B"], ["B","R","R","B","B","R"]]:
+    if h[-6:] in (["R", "B", "B", "R", "R", "B"], ["B", "R", "R", "B", "B", "R"]):
         return "Padrão de Gancho", h[-1]
     if h[-4] == h[-3] and h[-2] == "E" and h[-1] == h[-4]:
         return "Armadilha de Empate", h[-1]
 
-    # Padrões Cíclicos (18–20)
+    # ---------------------- Padrões Cíclicos ----------------------
     if len(h) >= 18 and h[-9:] == h[-18:-9][::-1]:
         return "Ciclo 9 Invertido", h[-1]
     if len(h) >= 18 and Counter(h[-18:-9]) == Counter(h[-9:]):
         return "Reescrita de Bloco 18", h[-1]
-    if h[-9] == h[-5] == h[-1] and h[-1] != h[-3]:
+    if h[-9] == h[-5] == h[-1]:
         return "Inversão Diagonal", h[-1]
 
-    # Padrões Estatísticos (21–23)
-    if len(h) >= 12 and h[-6:] == h[-12:-6] and h[-6:].count(h[-1]) == 5:
+    # ---------------------- Padrões Estatísticos ----------------------
+    if h[-6:].count(h[-1]) == 5:
         return "Dominância 5x1", h[-1]
     if len(h) >= 18:
-        cont = Counter(h[-18:])
-        if cont["R"] < cont["B"]:
+        freq = Counter(h[-18:])
+        if freq["R"] < freq["B"]:
             return "Frequência Oculta", "R"
-        elif cont["B"] < cont["R"]:
+        elif freq["B"] < freq["R"]:
             return "Frequência Oculta", "B"
     for cor in ["R", "B"]:
         if cor not in h[-12:]:
             return "Zona Morta", cor
 
-    # Padrões de Manipulação (24–27)
+    # ---------------------- Padrões de Manipulação ----------------------
     if h[-6:-3] == h[-3:] and h[-1] != h[-4]:
         return "Inversão com Delay", h[-1]
-    if h[-4:] == ["R","B","R","B"] and h[-8:-4] == ["B","R","B","R"]:
+    if h[-4:] == ["R", "B", "R", "B"] and h[-8:-4] == ["B", "R", "B", "R"]:
         return "Reflexo com Troca Lenta", h[-1]
-    if h[-6:-4] == ["R","R"] and h[-4:-2] == ["B","B"]:
+    if h[-6:-4] == ["R", "R"] and h[-4:-2] == ["B", "B"]:
         return "Cascata Fragmentada", h[-1]
-    if h[-5] == h[-4] and h[-3] == "E" and h[-2] != h[-4] and h[-1] == "E":
+    if h[-5] == h[-4] and h[-3] == "E" and h[-1] == "E":
         return "Empate Enganoso", h[-2]
 
-    # Padrões Dinâmicos (28–30)
+    # ---------------------- Padrões Dinâmicos ----------------------
     if h[-2:] == ["R", "R"]:
         return "Reação à Perda", "B"
     if h[-2:] == ["B", "B"]:
         return "Reação à Perda", "R"
-    if h[-6:] in [["R","E","B","E","R","B"], ["B","E","R","E","B","R"]]:
+    if h[-6:] in (["R", "E", "B", "E", "R", "B"], ["B", "E", "R", "E", "B", "R"]):
         return "Zebra Lenta", h[-1]
     if h[-4] == h[-3] == h[-2] and h[-1] != h[-2]:
         return "Padrão de Isca", h[-4]
 
     return None, None
 
-# ========== DETECÇÃO E SUGESTÃO ==========
+# ========== SUGESTÃO ==========
 st.subheader("🎯 Sugestão Automática")
-
 padrao, sugestao = detectar_padrao(list(st.session_state.historico))
+
 if padrao:
     st.success(f"Padrão Detectado: **{padrao}**")
     st.markdown(f"👉 Sugestão de entrada: **{cores[sugestao]} {sugestao}**")
@@ -144,9 +145,9 @@ if padrao:
     st.session_state.ultima_sugestao = sugestao
     st.session_state.modo_g1 = True
 else:
-    st.warning("Nenhum padrão detectado até o momento.")
+    st.warning("Nenhum padrão detectado.")
 
-# ========== VERIFICAÇÃO DO RESULTADO ==========
+# ========== VERIFICAÇÃO DE RESULTADO ==========
 if st.session_state.ultima_sugestao and len(st.session_state.historico) >= 2:
     if st.session_state.historico[-2] == st.session_state.ultima_sugestao:
         st.session_state.estatisticas[st.session_state.ultimo_padrao]["acertos"] += 1
@@ -157,7 +158,7 @@ if st.session_state.ultima_sugestao and len(st.session_state.historico) >= 2:
     st.session_state.ultima_sugestao = None
 
 # ========== PAINEL DE DESEMPENHO ==========
-st.subheader("📈 Painel de Desempenho por Padrão")
+st.subheader("📈 Desempenho por Padrão")
 for padrao, stats in st.session_state.estatisticas.items():
     total = stats["acertos"] + stats["erros"]
     if total > 0:
@@ -165,18 +166,17 @@ for padrao, stats in st.session_state.estatisticas.items():
         st.markdown(f"**{padrao}** — ✅ {stats['acertos']} / ❌ {stats['erros']} — 🎯 {taxa:.1f}%")
 
 # ========== CONTROLES ==========
-colg1, colreset = st.columns(2)
-with colg1:
+col1, col2 = st.columns(2)
+with col1:
     if st.button("❌ Desativar G1"):
         st.session_state.modo_g1 = False
-        st.success("Modo G1 desativado")
-with colreset:
+        st.success("Modo G1 desativado.")
+with col2:
     if st.button("🧹 Limpar Histórico"):
         st.session_state.historico.clear()
-        st.session_state.ultimo_padrao = None
         st.session_state.ultima_sugestao = None
-        st.success("Histórico limpo")
+        st.session_state.ultimo_padrao = None
+        st.success("Histórico limpo.")
 
-# ========== MODO G1 ==========
 if st.session_state.modo_g1:
-    st.info("🔁 Se a próxima entrada der erro, repetir a mesma sugestão (modo G1 ativo)")
+    st.info("🔁 G1 ATIVO: Se a próxima entrada for erro, repita a mesma sugestão.")
