@@ -19,7 +19,6 @@ if "pending_suggestion_for_check" not in st.session_state:
     st.session_state.pending_suggestion_for_check = None 
 if "estatisticas" not in st.session_state:
     st.session_state.estatisticas = defaultdict(lambda: {"acertos": 0, "erros": 0})
-# A variável 'modo_g1' agora é usada apenas para exibição
 if "modo_g1" not in st.session_state:
     st.session_state.modo_g1 = False
 
@@ -44,7 +43,7 @@ def handle_input(color):
         st.session_state.pending_suggestion_for_check = None
     
     st.session_state.historico.append(color)
-    st.experimental_rerun()
+    st.rerun()
 
 
 with col1:
@@ -157,11 +156,9 @@ def detectar_padrao_otimizado(h):
                     "priority": pattern_def["priority"]
                 })
     
-    # Ordena os padrões detectados por prioridade (maior primeiro)
     detected_patterns.sort(key=lambda x: x["priority"], reverse=True)
     
     if detected_patterns:
-        # Retorna o padrão de maior prioridade
         return detected_patterns[0]["name"], detected_patterns[0]["sugestao"]
     return None, None
 
@@ -171,12 +168,10 @@ st.subheader("🎯 Sugestão Automática")
 current_padrao = None
 current_sugestao = None
 
-# A sugestão só aparece se houver 9 ou mais resultados no histórico
 if len(st.session_state.historico) < 9:
     st.info(f"Aguardando mais {9 - len(st.session_state.historico)} resultados para começar a análise de padrões.")
     st.session_state.pending_suggestion_for_check = None
 else:
-    # A lógica G1 agora é uma reanálise, não uma repetição
     current_padrao, current_sugestao = detectar_padrao_otimizado(list(st.session_state.historico))
     
     if current_padrao and current_sugestao:
@@ -223,7 +218,7 @@ with col_controls2:
         st.session_state.estatisticas.clear()
         st.session_state.modo_g1 = False
         st.success("Histórico e estatísticas limpos.")
-        st.experimental_rerun()
+        st.rerun()
         
 if st.session_state.modo_g1:
     st.info("🔁 G1 ATIVO: Reanalisando após erro anterior.")
