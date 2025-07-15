@@ -39,7 +39,7 @@ if st.button("🔵 Blue"):
 st.session_state.historico.append("B")
 ========== EXIBIÇÃO HISTÓRICO ==========
 st.subheader("📊 Histórico (últimos 27)")
-CORREÇÃO: Itera sobre o histórico em ordem inversa para exibir os mais recentes primeiro,
+Itera sobre o histórico em ordem inversa para exibir os mais recentes primeiro,
 sem modificar o deque original.
 reversed_historico_iterator = reversed(st.session_state.historico)
 current_line_elements = []
@@ -49,6 +49,7 @@ for i, c in enumerate(reversed_historico_iterator):
 current_line_elements.append(cores.get(c, "❓"))
 line_count += 1
 # Se a linha atingiu 9 elementos ou é o último elemento do histórico, exibe a linha
+# O (i + 1) == len(st.session_state.historico) verifica se é o último elemento total
 if line_count % 9 == 0 or (i + 1) == len(st.session_state.historico):
 st.markdown("".join(current_line_elements))
 current_line_elements = [] # Reseta para a próxima linha
@@ -108,7 +109,7 @@ if len(h) >= 18 and h[-9:] == h[-18:-9][::-1]:
 return "Ciclo 9 Invertido", h[-1]
 if len(h) >= 18 and Counter(h[-18:-9]) == Counter(h[-9:]):
 return "Reescrita de Bloco 18", h[-1]
-# CORREÇÃO: Garante que há pelo menos 9 elementos para acessar h[-9], h[-5] e h[-1]
+# Garante que há pelo menos 9 elementos para acessar h[-9], h[-5] e h[-1]
 if len(h) >= 9 and h[-9] == h[-5] == h[-1]:
 return "Inversão Diagonal", h[-1]
 # ---------------------- Padrões Estatísticos ----------------------
@@ -120,7 +121,7 @@ if freq["R"] < freq["B"]:
 return "Frequência Oculta", "R"
 elif freq["B"] < freq["R"]:
 return "Frequência Oculta", "B"
-# CORREÇÃO: Garante que há pelo menos 12 elementos para verificar os últimos 12
+# Garante que há pelo menos 12 elementos para verificar os últimos 12
 if len(h) >= 12:
 for cor in ["R", "B"]:
 if cor not in h[-12:]:
@@ -128,23 +129,23 @@ return "Zona Morta", cor
 # ---------------------- Padrões de Manipulação ----------------------
 if len(h) >= 6 and h[-6:-3] == h[-3:] and h[-1] != h[-4]:
 return "Inversão com Delay", h[-1]
-# CORREÇÃO: Garante que há pelo menos 8 elementos para acessar h[-8:-4]
+# Garante que há pelo menos 8 elementos para acessar h[-8:-4]
 if len(h) >= 8 and h[-4:] == ["R", "B", "R", "B"] and h[-8:-4] == ["B", "R", "B", "R"]:
 return "Reflexo com Troca Lenta", h[-1]
 if len(h) >= 4 and h[-6:-4] == ["R", "R"] and h[-4:-2] == ["B", "B"]:
 return "Cascata Fragmentada", h[-1]
-# CORREÇÃO: Garante que há pelo menos 5 elementos para acessar h[-5]
+# Garante que há pelo menos 5 elementos para acessar h[-5]
 if len(h) >= 5 and h[-5] == h[-4] and h[-3] == "E" and h[-1] == "E":
 return "Empate Enganoso", h[-2]
 # ---------------------- Padrões Dinâmicos ----------------------
-# CORREÇÃO: Garante que há pelo menos 2 elementos para acessar h[-2:]
+# Garante que há pelo menos 2 elementos para acessar h[-2:]
 if len(h) >= 2 and h[-2:] == ["R", "R"]:
 return "Reação à Perda", "B"
 if len(h) >= 2 and h[-2:] == ["B", "B"]:
 return "Reação à Perda", "R"
 if len(h) >= 6 and h[-6:] in (["R", "E", "B", "E", "R", "B"], ["B", "E", "R", "E", "B", "R"]):
 return "Zebra Lenta", h[-1]
-# CORREÇÃO: Garante que há pelo menos 4 elementos para acessar h[-4]
+# Garante que há pelo menos 4 elementos para acessar h[-4]
 if len(h) >= 4 and h[-4] == h[-3] == h[-2] and h[-1] != h[-2]:
 return "Padrão de Isca", h[-4]
 return None, None
