@@ -17,10 +17,9 @@ if "historico" not in st.session_state:
     st.session_state.historico = deque(maxlen=27)
 if "pending_suggestion_for_check" not in st.session_state:
     st.session_state.pending_suggestion_for_check = None 
+# Estatísticas são mantidas para o filtro de 75%, mas não são mais exibidas
 if "estatisticas" not in st.session_state:
     st.session_state.estatisticas = defaultdict(lambda: {"acertos": 0, "erros": 0})
-if "modo_g1" not in st.session_state:
-    st.session_state.modo_g1 = False
 
 # ========== INSERÇÃO ==========
 st.subheader("📥 Inserir resultado")
@@ -33,18 +32,15 @@ def handle_input(color):
 
         if current_result == pending_suggestion_color:
             st.session_state.estatisticas[pending_pattern_name]["acertos"] += 1
-            st.success(f"✅ Entrada para o padrão '{pending_pattern_name}' foi um ACERTO!")
-            st.session_state.modo_g1 = False
+            st.success(f"✅ ACERTO na entrada do padrão '{pending_pattern_name}'!")
         else:
             st.session_state.estatisticas[pending_pattern_name]["erros"] += 1
-            st.error(f"❌ Entrada para o padrão '{pending_pattern_name}' foi um ERRO!")
-            st.session_state.modo_g1 = True
+            st.error(f"❌ ERRO na entrada do padrão '{pending_pattern_name}'!")
             
         st.session_state.pending_suggestion_for_check = None
     
     st.session_state.historico.append(color)
     st.rerun()
-
 
 with col1:
     if st.button("🔴 Red"):
@@ -67,6 +63,7 @@ for i, c in enumerate(reversed_historico_list):
         current_line_elements = []
 
 # ========== DETECÇÃO DE PADRÕES ==========
+# Ajuste de prioridades pode ser feito aqui, se desejado
 padroes_definitions = [
     # Padrões com Prioridade 10
     {"name": "Reação à Perda", "priority": 10, "min_len": 2, 
@@ -145,7 +142,6 @@ padroes_definitions = [
 
 def detectar_padrao_otimizado(h):
     detected_patterns = []
-    
     for pattern_def in padroes_definitions:
         if len(h) >= pattern_def["min_len"]:
             sugestao = pattern_def["detect_func"](h)
@@ -155,18 +151,14 @@ def detectar_padrao_otimizado(h):
                     "sugestao": sugestao,
                     "priority": pattern_def["priority"]
                 })
-    
     detected_patterns.sort(key=lambda x: x["priority"], reverse=True)
-    
     if detected_patterns:
         return detected_patterns[0]["name"], detected_patterns[0]["sugestao"]
     return None, None
 
 # ========== SUGESTÃO AUTOMÁTICA ==========
 st.subheader("🎯 Sugestão Automática")
-
-current_padrao = None
-current_sugestao = None
+current_padrao, current_sugestao = None, None
 
 if len(st.session_state.historico) < 9:
     st.info(f"Aguardando mais {9 - len(st.session_state.historico)} resultados para começar a análise de padrões.")
@@ -174,53 +166,35 @@ if len(st.session_state.historico) < 9:
 else:
     current_padrao, current_sugestao = detectar_padrao_otimizado(list(st.session_state.historico))
     
-    if current_padrao and current_sugestao:
-        if st.session_state.modo_g1:
-            st.info("🔁 Modo G1 Ativo: Reanalisando após erro anterior.")
-        st.success(f"Padrão Detectado: {current_padrao}")
-        st.markdown(f"👉 Sugestão de entrada: {cores.get(current_sugestao, '?')} **{current_sugestao}**")
-        st.session_state.pending_suggestion_for_check = (current_padrao, current_sugestao)
+    if current_padrao:
+        stats = st.session_state.estatisticas[current_padrao]
+        total = stats["acertos"] + stats["erros"]
+        
+        # Lógica do filtro de 75%
+        if total > 0:
+            taxa_acerto = (stats["acertos"] / total) * 100
+            if taxa_acerto >= 75:
+                st.success(f"Padrão Detectado: {current_padrao} ({taxa_acerto:.1f}% de acerto)")
+                st.markdown(f"👉 Sugestão de entrada: {cores.get(current_sugestao, '?')} **{current_sugestao}**")
+                st.session_state.pending_suggestion_for_check = (current_padrao, current_sugestao)
+            else:
+                st.warning(f"Nenhum padrão confiável (>=75%) detectado. O padrão '{current_padrao}' tem apenas {taxa_acerto:.1f}% de acerto.")
+                st.session_state.pending_suggestion_for_check = None
+        else:
+            # Sugere se for a primeira vez que o padrão aparece
+            st.success(f"Padrão Detectado: {current_padrao}")
+            st.markdown(f"👉 Sugestão de entrada: {cores.get(current_sugestao, '?')} **{current_sugestao}**")
+            st.session_state.pending_suggestion_for_check = (current_padrao, current_sugestao)
     else:
         st.warning("Nenhum padrão detectado no momento.")
         st.session_state.pending_suggestion_for_check = None
-        st.session_state.modo_g1 = False
-
-# ========== PAINEL DE DESEMPENHO ==========
-st.subheader("📈 Desempenho por Padrão")
-if not st.session_state.estatisticas:
-    st.info("Nenhum dado de desempenho ainda. Insira resultados para começar.")
-else:
-    stats_list = sorted(st.session_state.estatisticas.items(), key=lambda item: (item[1]['acertos'] + item[1]['erros']), reverse=True)
-    for padrao, stats in stats_list:
-        total = stats["acertos"] + stats["erros"]
-        if total > 0:
-            taxa = (stats["acertos"] / total) * 100
-            st.markdown(f"**{padrao}** — ✅ {stats['acertos']} / ❌ {stats['erros']} — 🎯 **{taxa:.1f}%**")
-        else:
-            st.markdown(f"**{padrao}** — Sem dados ainda.")
 
 # ========== CONTROLES ==========
 st.subheader("⚙️ Controles")
-col_controls1, col_controls2 = st.columns(2)
+if st.button("🧹 Limpar Histórico e Estatísticas"):
+    st.session_state.historico.clear()
+    st.session_state.pending_suggestion_for_check = None
+    st.session_state.estatisticas.clear()
+    st.success("Histórico e estatísticas limpos.")
+    st.rerun()
 
-with col_controls1:
-    if st.button("Alternar Modo G1 (Manual)"):
-        st.session_state.modo_g1 = not st.session_state.modo_g1
-        if st.session_state.modo_g1:
-            st.success("Modo G1 ATIVADO MANUALMENTE.")
-        else:
-            st.warning("Modo G1 DESATIVADO MANUALMENTE.")
-
-with col_controls2:
-    if st.button("🧹 Limpar Histórico e Estatísticas"):
-        st.session_state.historico.clear()
-        st.session_state.pending_suggestion_for_check = None
-        st.session_state.estatisticas.clear()
-        st.session_state.modo_g1 = False
-        st.success("Histórico e estatísticas limpos.")
-        st.rerun()
-        
-if st.session_state.modo_g1:
-    st.info("🔁 G1 ATIVO: Reanalisando após erro anterior.")
-else:
-    st.info("G1 DESATIVADO.")
